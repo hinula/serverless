@@ -60,31 +60,26 @@ jobs:
         working-directory: ./infra
         run: terraform init -input=false
 
-      # 7️⃣ Terraform format kontrol (opsiyonel)
-      - name: Terraform Format Check
-        working-directory: ./infra
-        run: terraform fmt -check -recursive || true
-
-      # 8️⃣ Terraform plan
+      # 7️⃣ Terraform plan
       - name: Terraform Plan
         working-directory: ./infra
-        env:
-          TF_VAR_region: ${{ secrets.AWS_REGION }}
         run: terraform plan -out=tfplan -input=false
 
-      # 9️⃣ Terraform apply
+      # 8️⃣ Terraform apply
       - name: Terraform Apply
         working-directory: ./infra
         env:
           TF_VAR_environment_vars: "{\"OPENWEATHER_API_KEY\":\"${{ secrets.OPENWEATHER_API_KEY }}\"}"
         run: terraform apply -input=false -auto-approve tfplan
 
+      # 9️⃣ Terraform output al
       - name: Get API endpoint output
-  id: get_outputs
-  working-directory: ./infra
-  run: |
-    echo "API_ENDPOINT=$(terraform output -raw api_endpoint)" >> $GITHUB_OUTPUT
+        id: get_outputs
+        working-directory: ./infra
+        run: |
+          echo "API_ENDPOINT=$(terraform output -raw api_endpoint)" >> $GITHUB_OUTPUT
 
-- name: Show API endpoint
-  run: |
-    echo "API Endpoint: ${{ steps.get_outputs.outputs.API_ENDPOINT }}"
+      # 🔟 API endpoint göster
+      - name: Show API endpoint
+        run: |
+          echo "API Endpoint: ${{ steps.get_outputs.outputs.API_ENDPOINT }}"
