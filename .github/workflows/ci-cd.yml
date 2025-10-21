@@ -1,4 +1,4 @@
-name: CI/CD - Terraform + Lambda 
+name: CI/CD - Terraform + Lambda
 
 on:
   push:
@@ -15,16 +15,19 @@ jobs:
     environment: production
 
     steps:
+      # 1️⃣ Repo’yu çek
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # 2️⃣ Python kurulumu
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.12"
 
+      # 3️⃣ Lambda zip package oluştur
       - name: Create Lambda zip package
         run: |
           cd src
@@ -38,6 +41,7 @@ jobs:
             zip -r function.zip lambda_function.py
           fi
 
+      # 4️⃣ AWS credentials yapılandır
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -45,30 +49,43 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      # 5️⃣ Terraform kurulumu
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: "1.6.0"
 
+      # 6️⃣ Terraform init
       - name: Terraform Init
         working-directory: ./infra
         run: terraform init -input=false
 
+      # 7️⃣ Terraform format kontrol (opsiyonel)
+      - name: Terraform Format Check
+        working-directory: ./infra
+        run: terraform fmt -check -recursive || true
+
+      # 8️⃣ Terraform plan
       - name: Terraform Plan
         working-directory: ./infra
+        env:
+          TF_VAR_region: ${{ secrets.AWS_REGION }}
         run: terraform plan -out=tfplan -input=false
 
+      # 9️⃣ Terraform apply
       - name: Terraform Apply
         working-directory: ./infra
         env:
           TF_VAR_environment_vars: "{\"OPENWEATHER_API_KEY\":\"${{ secrets.OPENWEATHER_API_KEY }}\"}"
         run: terraform apply -input=false -auto-approve tfplan
 
+      # 🔟 Terraform output al
       - name: Get API endpoint output
         id: get_outputs
         working-directory: ./infra
         run: |
           echo "API_ENDPOINT=$(terraform output -raw api_endpoint)" >> $GITHUB_OUTPUT
 
+      # 1️⃣1️⃣ API endpoint göster
       - name: Show API endpoint
         run: echo "API Endpoint: ${{ steps.get_outputs.outputs.API_ENDPOINT }}"
