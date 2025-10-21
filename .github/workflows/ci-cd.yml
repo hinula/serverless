@@ -2,8 +2,10 @@ name: CI/CD - Terraform + Lambda
 
 on:
   push:
-    branches: [ main, master ]
-  workflow_dispatch: {}
+    branches:
+      - main
+      - master
+  workflow_dispatch:
 
 permissions:
   contents: read
