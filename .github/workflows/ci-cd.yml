@@ -1,4 +1,4 @@
-name: CI/CD - Terraform + Lambda
+name: CI/CD - Terraform + Lambda 
 
 on:
   push:
@@ -65,10 +65,10 @@ jobs:
         run: terraform apply -input=false -auto-approve tfplan
 
       - name: Get API endpoint output
+        id: get_outputs
         working-directory: ./infra
-        id: outputs
         run: |
           echo "API_ENDPOINT=$(terraform output -raw api_endpoint)" >> $GITHUB_OUTPUT
 
       - name: Show API endpoint
-        run: echo "API: ${{ steps.outputs.outputs.API_ENDPOINT }}"
+        run: echo "API Endpoint: ${{ steps.get_outputs.outputs.API_ENDPOINT }}"
