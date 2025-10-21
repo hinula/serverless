@@ -79,13 +79,12 @@ jobs:
           TF_VAR_environment_vars: "{\"OPENWEATHER_API_KEY\":\"${{ secrets.OPENWEATHER_API_KEY }}\"}"
         run: terraform apply -input=false -auto-approve tfplan
 
-      # 🔟 Terraform output al
       - name: Get API endpoint output
-        id: get_outputs
-        working-directory: ./infra
-        run: |
-          echo "API_ENDPOINT=$(terraform output -raw api_endpoint)" >> $GITHUB_OUTPUT
+  id: get_outputs
+  working-directory: ./infra
+  run: |
+    echo "API_ENDPOINT=$(terraform output -raw api_endpoint)" >> $GITHUB_OUTPUT
 
-      # 1️⃣1️⃣ API endpoint göster
-      - name: Show API endpoint
-        run: echo "API Endpoint: ${{ steps.get_outputs.outputs.API_ENDPOINT }}"
+- name: Show API endpoint
+  run: |
+    echo "API Endpoint: ${{ steps.get_outputs.outputs.API_ENDPOINT }}"
