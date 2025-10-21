@@ -1,0 +1,74 @@
+name: CI/CD - Terraform + Lambda
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Create Lambda zip package
+        run: |
+          cd src
+          if [ -f requirements.txt ] ; then
+            python -m pip install -r requirements.txt -t package
+            cp lambda_function.py package/
+            cd package
+            zip -r ../function.zip .
+            cd ..
+          else
+            zip -r function.zip lambda_function.py
+          fi
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: "1.6.0"
+
+      - name: Terraform Init
+        working-directory: ./infra
+        run: terraform init -input=false
+
+      - name: Terraform Plan
+        working-directory: ./infra
+        run: terraform plan -out=tfplan -input=false
+
+      - name: Terraform Apply
+        working-directory: ./infra
+        env:
+          TF_VAR_environment_vars: "{\"OPENWEATHER_API_KEY\":\"${{ secrets.OPENWEATHER_API_KEY }}\"}"
+        run: terraform apply -input=false -auto-approve tfplan
+
+      - name: Get API endpoint output
+        working-directory: ./infra
+        id: outputs
+        run: |
+          echo "API_ENDPOINT=$(terraform output -raw api_endpoint)" >> $GITHUB_OUTPUT
+
+      - name: Show API endpoint
+        run: echo "API: ${{ steps.outputs.outputs.API_ENDPOINT }}"
