@@ -3,11 +3,12 @@ import os
 import requests
 
 def lambda_handler(event, context):
+    # API Gateway path
     path = event.get("resource", "/")
     params = event.get("queryStringParameters") or {}
     name = params.get("name", "Dünya")
     
-    # Sadece /hello veya /weather path’ini kabul et
+    # Endpoint kontrolü
     if path not in ["/hello", "/weather"]:
         return {
             "statusCode": 404,
@@ -15,6 +16,7 @@ def lambda_handler(event, context):
             "headers": {"Content-Type": "application/json"}
         }
     
+    # OpenWeather API
     api_key = os.environ.get("OPENWEATHER_API_KEY")
     weather_data = {}
     if api_key:
